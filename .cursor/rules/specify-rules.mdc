@@ -1,0 +1,35 @@
+---
+description: Project Development Guidelines
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# daily-worker Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2026-04-21
+
+## Active Technologies
+
+- Python 3.12 (backend), Node.js 20 + TypeScript (frontend) + FastAPI, Uvicorn, Pydantic, SQLAlchemy, psycopg, React, Vite (001-daily-work-tracker)
+
+## Project Structure
+
+```text
+src/
+tests/
+```
+
+## Commands
+
+cd src && pytest && ruff check .
+
+## Code Style
+
+Python 3.12 (backend), Node.js 20 + TypeScript (frontend): Follow standard conventions
+
+## Recent Changes
+
+- 001-daily-work-tracker: Added Python 3.12 (backend), Node.js 20 + TypeScript (frontend) + FastAPI, Uvicorn, Pydantic, SQLAlchemy, psycopg, React, Vite
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

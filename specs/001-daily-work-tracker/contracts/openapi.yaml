@@ -1,0 +1,213 @@
+openapi: 3.0.3
+info:
+  title: Daily Work Tracker API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /tasks:
+    post:
+      summary: Create task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    get:
+      summary: List tasks for current day
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+  /tasks/{taskId}:
+    patch:
+      summary: Update task title
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskRequest"
+      responses:
+        "200":
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+  /tasks/{taskId}/complete:
+    post:
+      summary: Mark task complete
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Task completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+  /focus/start:
+    post:
+      summary: Start focus session for one task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartFocusRequest"
+      responses:
+        "201":
+          description: Focus started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSession"
+        "409":
+          description: Active session already exists
+  /focus/stop:
+    post:
+      summary: Stop active focus session
+      responses:
+        "200":
+          description: Focus stopped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSession"
+        "409":
+          description: No active session
+  /timeline/today:
+    get:
+      summary: Get ordered activity timeline for current local day
+      responses:
+        "200":
+          description: Today's timeline events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityEvent"
+components:
+  schemas:
+    Task:
+      type: object
+      required: [id, title, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+          enum: [active, completed]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+    FocusSession:
+      type: object
+      required: [id, taskId, startedAt, state, stopReason]
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        state:
+          type: string
+          enum: [active, ended]
+        stopReason:
+          type: string
+          enum: [manual, day_rollover]
+    ActivityEvent:
+      type: object
+      required: [id, eventType, occurredAt, localDay]
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum: [task_created, focus_started, focus_stopped, task_completed, task_updated]
+        taskId:
+          type: string
+          format: uuid
+          nullable: true
+        focusSessionId:
+          type: string
+          format: uuid
+          nullable: true
+        occurredAt:
+          type: string
+          format: date-time
+        localDay:
+          type: string
+          format: date
+        payload:
+          type: object
+          additionalProperties: true
+    CreateTaskRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+    UpdateTaskRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+    StartFocusRequest:
+      type: object
+      required: [taskId]
+      properties:
+        taskId:
+          type: string
+          format: uuid
