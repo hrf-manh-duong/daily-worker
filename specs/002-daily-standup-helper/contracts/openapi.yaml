@@ -1,0 +1,146 @@
+openapi: 3.0.3
+info:
+  title: Daily Standup Helper API
+  version: 0.1.0
+  description: |
+    Endpoints for the standup composer. Single-user, local deployment.
+    All dates use the user's local timezone; clients SHOULD send the
+    `X-Client-Local-Date` header on prefill requests.
+
+paths:
+  /api/standup/prefill:
+    get:
+      summary: Get yesterday-prefill derived from completed tasks
+      parameters:
+        - in: header
+          name: X-Client-Local-Date
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Client's current local date (ISO YYYY-MM-DD). Used to compute "yesterday".
+      responses:
+        "200":
+          description: Prefill payload (may have empty list if no completions)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandupPrefill"
+
+  /api/standup:
+    post:
+      summary: Save (upsert) the standup for a given local date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StandupSaveRequest"
+      responses:
+        "200":
+          description: Saved entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandupEntry"
+        "422":
+          description: Validation error
+    get:
+      summary: List saved standup entries, newest first
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+      responses:
+        "200":
+          description: History list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StandupEntry"
+
+  /api/standup/{local_date}:
+    get:
+      summary: Get the saved standup for a specific local date
+      parameters:
+        - in: path
+          name: local_date
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Entry for that date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandupEntry"
+        "404":
+          description: No entry saved for that date
+
+components:
+  schemas:
+    StandupSaveRequest:
+      type: object
+      required: [local_date, today]
+      properties:
+        local_date:
+          type: string
+          format: date
+        yesterday:
+          type: string
+          maxLength: 4000
+          default: ""
+        today:
+          type: string
+          maxLength: 4000
+          minLength: 1
+        blockers:
+          type: string
+          maxLength: 4000
+          default: ""
+
+    StandupEntry:
+      type: object
+      required: [local_date, yesterday, today, blockers, created_at, updated_at]
+      properties:
+        local_date:
+          type: string
+          format: date
+        yesterday:
+          type: string
+        today:
+          type: string
+        blockers:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    StandupPrefill:
+      type: object
+      required: [for_local_date, source_local_date, completed_tasks, prefill_markdown]
+      properties:
+        for_local_date:
+          type: string
+          format: date
+        source_local_date:
+          type: string
+          format: date
+        completed_tasks:
+          type: array
+          items:
+            type: string
+        prefill_markdown:
+          type: string
