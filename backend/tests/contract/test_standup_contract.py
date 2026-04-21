@@ -38,6 +38,17 @@ def test_post_standup_rejects_empty_today():
     assert response.status_code == 422
 
 
+def test_post_standup_rejects_whitespace_only_today():
+    # Pydantic min_length=1 passes (3 chars), but the service-layer trim/guard
+    # catches this and still returns 422. Covers the two-layer validation path.
+    client = _fresh_client()
+    response = client.post(
+        "/standup",
+        json={"local_date": "2030-01-04", "today": "   "},
+    )
+    assert response.status_code == 422
+
+
 def test_post_standup_rejects_oversized_field():
     client = _fresh_client()
     response = client.post(
