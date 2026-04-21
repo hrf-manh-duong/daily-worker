@@ -3,6 +3,8 @@ import "./App.css";
 import { FocusPanel } from "../features/focus/FocusPanel";
 import { TasksPanel } from "../features/tasks/TasksPanel";
 import { Timeline } from "../features/timeline/Timeline";
+import { StandupPanel } from "../features/standup/StandupPanel";
+import { StandupHistory } from "../features/standup/StandupHistory";
 import { completeTask, createTask, deleteTask, listTasks } from "../services/taskApi";
 import { startFocus, stopFocus } from "../services/focusApi";
 import { getTodayTimeline } from "../services/timelineApi";
@@ -22,12 +24,16 @@ function deriveActiveFocus(events: ActivityEvent[]): { sessionId: string; taskId
   return null;
 }
 
+type StandupView = "compose" | "history";
+
 export function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [session, setSession] = useState<FocusSession | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [standupView, setStandupView] = useState<StandupView>("compose");
+  const [standupRefreshKey, setStandupRefreshKey] = useState(0);
 
   const refresh = useCallback(async () => {
     try {
@@ -154,6 +160,32 @@ export function App() {
         <FocusPanel session={session} task={activeTask} onStop={handleStop} />
         <Timeline events={events} tasks={tasks} />
       </div>
+
+      <section className="standup-section" aria-label="Daily standup" style={{ marginTop: 24 }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <button
+            type="button"
+            onClick={() => setStandupView("compose")}
+            aria-pressed={standupView === "compose"}
+            style={{ fontWeight: standupView === "compose" ? 700 : 400 }}
+          >
+            Compose
+          </button>
+          <button
+            type="button"
+            onClick={() => setStandupView("history")}
+            aria-pressed={standupView === "history"}
+            style={{ fontWeight: standupView === "history" ? 700 : 400 }}
+          >
+            History
+          </button>
+        </div>
+        {standupView === "compose" ? (
+          <StandupPanel onSaved={() => setStandupRefreshKey((k) => k + 1)} />
+        ) : (
+          <StandupHistory refreshKey={standupRefreshKey} />
+        )}
+      </section>
     </div>
   );
 }

@@ -25,3 +25,26 @@ export type ActivityEvent = {
   local_day: string;
   payload: Record<string, unknown>;
 };
+
+export type StandupEntry = {
+  local_date: string;
+  yesterday: string;
+  today: string;
+  blockers: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StandupPrefill = {
+  for_local_date: string;
+  source_local_date: string;
+  completed_tasks: string[];
+  prefill_markdown: string;
+};
+
+export type StandupSavePayload = {
+  local_date: string;
+  yesterday: string;
+  today: string;
+  blockers: string;
+};

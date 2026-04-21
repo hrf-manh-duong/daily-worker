@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Optional
 from uuid import UUID
 
-from domain.models import ActivityEvent, FocusSession, Task
+from domain.models import ActivityEvent, FocusSession, StandupEntry, Task
 
 
 class MemoryStore:
@@ -10,6 +10,7 @@ class MemoryStore:
         self.tasks: dict[UUID, Task] = {}
         self.focus_sessions: dict[UUID, FocusSession] = {}
         self.events: list[ActivityEvent] = []
+        self.standup_entries: dict[date, StandupEntry] = {}
 
 
 class TaskRepository:
@@ -89,3 +90,27 @@ class ActivityRepository:
             "task_updated": 5,
         }
         return sorted(events, key=lambda e: (e.occurred_at, priority.get(e.event_type, 99)))
+
+
+class StandupRepository:
+    def __init__(self, store: MemoryStore) -> None:
+        self.store = store
+
+    def upsert(self, entry: StandupEntry) -> StandupEntry:
+        existing = self.store.standup_entries.get(entry.local_date)
+        if existing is not None:
+            entry.created_at = existing.created_at
+        entry.updated_at = datetime.now(timezone.utc)
+        self.store.standup_entries[entry.local_date] = entry
+        return entry
+
+    def get(self, local_date: date) -> Optional[StandupEntry]:
+        return self.store.standup_entries.get(local_date)
+
+    def list(self, limit: int) -> list[StandupEntry]:
+        entries = sorted(
+            self.store.standup_entries.values(),
+            key=lambda e: e.local_date,
+            reverse=True,
+        )
+        return entries[:limit]

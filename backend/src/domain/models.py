@@ -37,3 +37,13 @@ class ActivityEvent:
     local_day: date = field(default_factory=lambda: _now().date())
     id: UUID = field(default_factory=uuid4)
     payload: dict = field(default_factory=dict)
+
+
+@dataclass
+class StandupEntry:
+    local_date: date
+    yesterday: str = ""
+    today: str = ""
+    blockers: str = ""
+    created_at: datetime = field(default_factory=_now)
+    updated_at: datetime = field(default_factory=_now)

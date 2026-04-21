@@ -1,9 +1,15 @@
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
+from typing import Optional
 from uuid import UUID
 
-from domain.models import ActivityEvent
+from domain.models import ActivityEvent, StandupEntry
 from app_logging.activity_logger import log_activity
-from repositories.memory import ActivityRepository, FocusRepository, TaskRepository
+from repositories.memory import (
+    ActivityRepository,
+    FocusRepository,
+    StandupRepository,
+    TaskRepository,
+)
 
 
 class TaskService:
@@ -94,3 +100,56 @@ class TimelineService:
 
     def today(self):
         return self.events.list_today()
+
+
+class StandupService:
+    MAX_FIELD_LEN = 4000
+    MAX_LIST_LIMIT = 365
+
+    def __init__(self, standups: StandupRepository, tasks: "TaskService") -> None:
+        self.standups = standups
+        self.tasks = tasks
+
+    def _normalize(self, value: str) -> str:
+        trimmed = value.strip()
+        if len(trimmed) > self.MAX_FIELD_LEN:
+            raise ValueError("field_too_long")
+        return trimmed
+
+    def save(self, local_date: date, yesterday: str, today: str, blockers: str) -> StandupEntry:
+        today_t = self._normalize(today)
+        if not today_t:
+            raise ValueError("invalid_today")
+        entry = StandupEntry(
+            local_date=local_date,
+            yesterday=self._normalize(yesterday),
+            today=today_t,
+            blockers=self._normalize(blockers),
+        )
+        return self.standups.upsert(entry)
+
+    def get(self, local_date: date) -> Optional[StandupEntry]:
+        return self.standups.get(local_date)
+
+    def list(self, limit: int = 30) -> list[StandupEntry]:
+        bounded = max(1, min(limit, self.MAX_LIST_LIMIT))
+        return self.standups.list(bounded)
+
+    def get_prefill(self, for_local_date: date) -> dict:
+        source_date = for_local_date - timedelta(days=1)
+        completed = [
+            t
+            for t in self.tasks.list_tasks()
+            if t.status == "completed"
+            and t.completed_at is not None
+            and t.completed_at.date() == source_date
+        ]
+        completed.sort(key=lambda t: t.completed_at)
+        titles = [t.title for t in completed]
+        markdown = "\n".join(f"- {title}" for title in titles)
+        return {
+            "for_local_date": for_local_date,
+            "source_local_date": source_date,
+            "completed_tasks": titles,
+            "prefill_markdown": markdown,
+        }

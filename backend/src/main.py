@@ -1,7 +1,7 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import focus_router, tasks_router, timeline_router
+from api.routes import focus_router, standup_router, tasks_router, timeline_router
 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI(title="Daily Work Tracker API")
@@ -23,3 +23,4 @@ def health():
 app.include_router(tasks_router)
 app.include_router(focus_router)
 app.include_router(timeline_router)
+app.include_router(standup_router)
